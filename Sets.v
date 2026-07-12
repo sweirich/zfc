@@ -18,13 +18,15 @@
 
 Global Set Asymmetric Patterns.
 
-(* The type representing sets  (Ensemble = french for set) *)
+(* A minimal set of building blocks ([Ens], [depprod], [EQ] here and
+   [Power] in [Axioms.v]) is made universe polymorphic so the "small sets"
+   of [Hierarchy.v] can reuse them at a lower universe. *)
 
-Inductive Ens : Type :=
+(* The type representing sets  (Ensemble = french for set). *)
+Polymorphic Cumulative Inductive Ens : Type :=
     sup : forall A : Type, (A -> Ens) -> Ens.
 
 (* Existential quantification *)
-
 Inductive EXType (P : Type) (Q : P -> Prop) : Prop :=
     EXTypei : forall x : P, Q x -> EXType P Q.
 
@@ -36,19 +38,44 @@ Inductive prod_t (A B : Type) : Type :=
 
 (* Existential on the Type level *)
 
-Inductive depprod (A : Type) (P : A -> Type) : Type :=
+Polymorphic Inductive depprod (A : Type) (P : A -> Type) : Type :=
     dep_i : forall x : A, P x -> depprod A P.
 
 
 (* Recursive Definition of the extentional equality on sets *)
 
-Definition EQ : Ens -> Ens -> Prop.
+Polymorphic Definition EQ : Ens -> Ens -> Prop.
 simple induction 1; intros A f eq1.
 simple induction 1; intros B g eq2.
 apply and.
 exact (forall x : A, EXType _ (fun y : B => eq1 x (g y))).
 exact (forall y : B, EXType _ (fun x : A => eq1 x (g y))).
 Defined.
+
+Fixpoint Eq (t1 t2 : Ens) {struct t1} : Prop := 
+  match t1 , t2 with
+  | sup A f, sup B g => 
+      (forall x, exists y : B, Eq (f x) (g y)) /\
+      (forall y, exists x : A, Eq (f x) (g y))
+  end.
+
+From Stdlib Require Import FunctionalExtensionality.
+
+Definition Relate {A B}{f:A -> Ens}{g:B -> Ens} 
+  (h1: forall x : A, exists y : B, Eq (f x) (g y))
+  (h2 : forall y : B, exists x : A, Eq (f x) (g y)) : A -> B -> Prop.
+intros x y.
+specialize (h1 x).
+specialize (h2 y).
+Abort.
+
+Lemma Eq_eq: forall (E F : Ens), Eq E F -> E = F.
+intro E. induction E as [A f].
+intro F. destruct F as [B g].
+cbn. 
+intros [h1 h2].
+(* here it would be good to have a parametricity principle... *)
+Abort.
 
 (* Membership on sets *)
 

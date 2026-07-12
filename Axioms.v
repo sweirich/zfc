@@ -199,7 +199,7 @@ Qed.
 (* Projections of a set: *)
 (*  1: its base type     *)
 
-Definition pi1 : Ens -> Type.
+Polymorphic Definition pi1 : Ens -> Type.
 simple induction 1.
 intros A f r.
 exact A.
@@ -207,7 +207,7 @@ Defined.
 
 (*  2: the function      *)
 
-Definition pi2 : forall E : Ens, pi1 E -> Ens.
+Polymorphic Definition pi2 : forall E : Ens, pi1 E -> Ens.
 simple induction E.
 intros A f r.
 exact f.
@@ -427,7 +427,9 @@ Qed.
 
 (*  The powerset and its axioms   *)
 
-Definition Power (E : Ens) : Ens :=
+(* Polymorphic so [Hierarchy.v] can reuse it at the smaller universe of
+   the "small sets" instead of duplicating it as [Power']. *)
+Polymorphic Definition Power (E : Ens) : Ens :=
   match E with
   | sup A f =>
       sup _

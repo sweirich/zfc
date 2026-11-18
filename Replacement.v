@@ -12,6 +12,12 @@
 (* License along with this program; if not, write to the Free         *)
 (* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA *)
 (* 02110-1301 USA                                                     *)
+(*--------------------------------------------------------------------*)
+(* Modified by Stephanie Weirich, 2026 (from                          *)
+(* https://github.com/rocq-archive/zfc): Added [Set Universe          *)
+(* Polymorphism]. [Choice_Collection] adapted to the sorted [Ens] of  *)
+(* [Sets.v] (atoms and pairs have no members).                        *)
+(*--------------------------------------------------------------------*)
 
 
 (* Contribution to the Coq Library   V6.3 (July 1999)                    *)
@@ -20,6 +26,10 @@ Require Import Sets.
 Require Import Axioms.
 Require Import Cartesian.
 Require Import Omega.
+
+(* Universe polymorphic, matching the [zfc] core (see [Sets.v]). *)
+Set Universe Polymorphism.
+Unset Universe Minimization ToSet.
 
 
 (* A Type-theoretical axiom of choice gives us the collection axiom  *)
@@ -42,20 +52,18 @@ Definition choice :=
 
 
 Theorem Choice_Collection : choice -> collection.
-unfold collection in |- *; intro; intros P comp G E.
-cut (EXType _ (fun f : Ens -> Ens => forall B : Ens, P B (f B))).
-simple induction 1; intros f pf.
-elim E; intros A g hr; intros.
-exists (sup A (fun a : A => f (g a))).
-simpl in |- *; intros X i.
-elim i; intros a ea.
-exists (f (g a)).
-split.
-exists a; auto with zfc.
-apply comp with (g a); auto with zfc.
-unfold choice in H.
-apply H; intros.
-elim (G a); intros b hb; exists b; auto with zfc.
+Proof.
+  unfold collection; intros ch P comp G E.
+  destruct (ch Ens Ens P G) as [f pf].
+  destruct E as [n | b c | A g].
+  - (* an atom has no members *)
+    exists Vide; intros x i; simpl in i; contradiction.
+  - (* nor does a pair *)
+    exists Vide; intros x i; simpl in i; contradiction.
+  - exists (sup A (fun a : A => f (g a))).
+    intros X [a ea]. exists (f (g a)); split.
+    + exists a; apply EQ_refl.
+    + apply comp with (g a); [ apply EQ_sym; exact ea | apply pf ].
 Qed.
 
 

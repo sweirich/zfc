@@ -12,6 +12,12 @@
 (* License along with this program; if not, write to the Free         *)
 (* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA *)
 (* 02110-1301 USA                                                     *)
+(*--------------------------------------------------------------------*)
+(* Modified by Stephanie Weirich, 2026 (from                          *)
+(* https://github.com/rocq-archive/zfc): Replaced [elimtype F] with   *)
+(* [cut F; simple induction 1] for current Rocq; renamed [Big] to     *)
+(* [U0] (and the [Big_*] lemmas to [U0_*]).                           *)
+(*--------------------------------------------------------------------*)
 
 
 (* Contribution to the Coq Library   V6.3 (July 1999)                    *)
@@ -1644,15 +1650,15 @@ Qed.
 
 (* The set of small sets                        *)
 
-Definition Big := sup Ens' inj.
+Definition U0 := sup Ens' inj.
 
-Theorem Big_is_big : forall E : Ens', IN (inj E) Big.
-intros E; unfold Big in |- *; simpl in |- *; exists E; auto with zfc.
+Theorem U0_is_big : forall E : Ens', IN (inj E) U0.
+intros E; unfold U0 in |- *; simpl in |- *; exists E; auto with zfc.
 Qed.
 
-Theorem IN_Big_small :
- forall E : Ens, IN E Big -> EXType' _ (fun E' : Ens' => EQ E (inj E')).
-unfold Big in |- *; simpl in |- *; simple induction 1; intros E' HE';
+Theorem IN_U0_small :
+ forall E : Ens, IN E U0 -> EXType' _ (fun E' : Ens' => EQ E (inj E')).
+unfold U0 in |- *; simpl in |- *; simple induction 1; intros E' HE';
  exists E'; auto with zfc.
 Qed.
 
@@ -1666,8 +1672,8 @@ Qed.
 
 
 
-Theorem Big_closed_for_power : forall E : Ens, IN E Big -> IN (Power E) Big.
-unfold Big in |- *; simpl in |- *; intros E; simple induction 1;
+Theorem U0_closed_for_power : forall E : Ens, IN E U0 -> IN (Power E) U0.
+unfold U0 in |- *; simpl in |- *; intros E; simple induction 1;
  intros E' HE'; exists (Power' E').
 apply EQ_tran with (Power (inj E')).
 apply Power_sound; assumption.

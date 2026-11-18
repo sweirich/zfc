@@ -12,6 +12,12 @@
 (* License along with this program; if not, write to the Free         *)
 (* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA *)
 (* 02110-1301 USA                                                     *)
+(*--------------------------------------------------------------------*)
+(* Modified by Stephanie Weirich, 2026 (from                          *)
+(* https://github.com/rocq-archive/zfc): Added [Set Universe          *)
+(* Polymorphism] to match the universe-polymorphic core in [Sets.v];  *)
+(* no other changes.                                                  *)
+(*--------------------------------------------------------------------*)
 
 
 (* Contribution to the Coq Library   V6.3 (July 1999)                    *)
@@ -22,6 +28,10 @@
 
 Require Import Sets.
 Require Import Axioms.
+
+(* Universe polymorphic, matching the [zfc] core (see [Sets.v]). *)
+Set Universe Polymorphism.
+Unset Universe Minimization ToSet.
 
 
 Theorem Russell : forall E : Ens, (forall E' : Ens, IN E' E) -> False.

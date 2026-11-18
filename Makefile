@@ -1,3 +1,6 @@
+# Modified by Stephanie Weirich, 2026 (from https://github.com/rocq-archive/zfc):
+# use the rocq CLI (`rocq makefile`) instead of `coq_makefile`.
+
 COQBIN ?= rocq
 
 all: Makefile.coq

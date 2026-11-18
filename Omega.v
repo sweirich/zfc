@@ -12,52 +12,50 @@
 (* License along with this program; if not, write to the Free         *)
 (* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA *)
 (* 02110-1301 USA                                                     *)
+(*--------------------------------------------------------------------*)
+(* Modified by Stephanie Weirich, 2026 (from                          *)
+(* https://github.com/rocq-archive/zfc): [Nat n] is now the primitive *)
+(* [atom n] of [Sets.v] instead of a von Neumann numeral; proofs      *)
+(* adapted; made universe polymorphic; added [Nat_inj],               *)
+(* [Nat_not_set], [Omega_is_set] and related lemmas; removed          *)
+(* [Omega_EQ_Union] (false once numerals are atoms) and [Vee] (now in *)
+(* [Ordinal_theory.v]).                                               *)
+(*--------------------------------------------------------------------*)
 
 
 (* Contribution to the Coq Library   V6.3 (July 1999)                    *)
 
-(* The set of natural numbers  *)
+(* The set of natural numbers.
+
+   A numeral is now the atom [Nat n := atom n] of [Sets.v] rather than a
+   von Neumann ordinal, and [Omega] is the set of all atoms.  Numerals are
+   therefore memberless and disjoint from every set; [Nat] is injective by
+   the atom clause of [EQ].  The ordinal successor [Class_succ] is kept as
+   an operation on sets, no longer related to [Nat]. *)
 
 Require Import Sets.
 Require Import Axioms.
 
+Set Universe Polymorphism.
+Unset Universe Minimization ToSet.
+
 Definition Class_succ (E : Ens) := Union (Paire E (Sing E)).
 
-(*
-Inductive Ord : Ens -> Prop :=
-  Oo : (Ord Vide)
-| So : (E:Ens)(Ord E)->(Ord (Class_succ E))
-| Lo : (E:Ens)((e:Ens)(IN e E)->(Ord e))->(Ord (Union E))
-| Eo : (E,E':Ens)(Ord E)->(EQ E E')->(Ord E').
-
-Hints Resolve Oo So Lo : zfc.
-*)
-
-
-Definition Nat : nat -> Ens.
-simple induction 1; intros.
-exact Vide.
-exact (Class_succ X).
-Defined.
-
-(*
-Theorem Nat_Ord : (n:nat)(Ord (Nat n)).
-Induction n; Simpl; Auto with zfc.
-Save.
-*)
+Definition Nat (n : nat) : Ens := atom n.
 
 Definition Omega : Ens := sup nat Nat.
 
 Theorem IN_Class_succ : forall E : Ens, IN E (Class_succ E).
-intros E; unfold Class_succ in |- *; unfold Sing in |- *;
- apply IN_Union with (Paire E E); auto with zfc.
+Proof.
+  intro E. unfold Class_succ. apply IN_Union with (Sing E).
+  - apply IN_Paire_right.
+  - apply IN_Sing.
 Qed.
 
-
-Theorem INC_Class_succ : forall E : Ens, INC E (Class_succ E).
-unfold INC in |- *; unfold Class_succ in |- *.
-intros.
-apply IN_Union with E; auto with zfc.
+(* A *set* is included in its successor. *)
+Theorem INC_Class_succ : forall E : Ens, is_set E -> INC E (Class_succ E).
+Proof.
+  intros E Hs. unfold Class_succ. apply IN_INC_Union; [ exact Hs | apply IN_Paire_left ].
 Qed.
 
 Hint Resolve IN_Class_succ INC_Class_succ: zfc.
@@ -65,126 +63,52 @@ Hint Resolve IN_Class_succ INC_Class_succ: zfc.
 
 Theorem IN_Class_succ_or :
  forall E E' : Ens, IN E' (Class_succ E) -> EQ E E' \/ IN E' E.
-intros E E' i.
-unfold Class_succ in i.
-elim (Union_IN (Paire E (Sing E)) E' i).
-intros E1; simple induction 1; intros i1 i2.
-elim (Paire_IN E (Sing E) E1 i1).
-intros; right; apply IN_sound_right with E1; auto with zfc.
-intros; left; cut (IN E' (Sing E)).
-auto with zfc.
-apply IN_sound_right with E1; auto with zfc.
-
+Proof.
+  intros E E' i. unfold Class_succ in i.
+  destruct (Union_IN (Paire E (Sing E)) E' i) as [E1 [i1 i2]].
+  destruct (Paire_IN E (Sing E) E1 i1) as [e | e].
+  - right. apply IN_sound_right with E1; assumption.
+  - left. apply EQ_sym. apply IN_Sing_EQ. apply IN_sound_right with E1; assumption.
 Qed.
 
 
 Theorem E_not_IN_E : forall E : Ens, IN E E -> F.
-simple induction E; intros A f r i.
-cut False.
-simple induction 1.
-elim (IN_EXType (sup A f) (sup A f) i); intros a e.
-
-simpl in a.
-change (EQ (sup A f) (f a)) in e.
-elim (r a).
-apply IN_sound_right with (sup A f); auto with zfc.
-exists a; auto with zfc.
+Proof.
+  induction E as [n | a IHa b IHb | A f IH]; intro i.
+  - destruct i.
+  - destruct i.
+  - cut False; [ intro Hf; destruct Hf | ].
+    destruct i as [a e].
+    destruct (IH a (IN_sound_right _ _ _ e (EXTypei _ _ a (EQ_refl (f a))))).
 Qed.
 
 
 Theorem Nat_IN_Omega : forall n : nat, IN (Nat n) Omega.
-intros; simpl in |- *; exists n; auto with zfc.
-Qed.
+Proof. intro n. unfold Omega, IN. exists n. apply EQ_refl. Qed.
 Hint Resolve Nat_IN_Omega: zfc.
 
 
 Theorem IN_Omega_EXType :
  forall E : Ens, IN E Omega -> EXType _ (fun n : nat => EQ (Nat n) E).
-simpl in |- *; simple induction 1.
-intros n e.
-exists n; auto with zfc.
+Proof.
+  intros E H. destruct H as [n e]. exists n. apply EQ_sym. exact e.
 Qed.
+
+(* A numeral has no members. *)
+Theorem IN_Nat : forall (n : nat) (E : Ens), IN E (Nat n) -> False.
+Proof. intros n E H. exact H. Qed.
 
 Theorem IN_Nat_EXType :
  forall (n : nat) (E : Ens),
  IN E (Nat n) -> EXType _ (fun p : nat => EQ E (Nat p)).
-simple induction n.
-simpl in |- *.
-simple induction 1.
-simple induction x.
+Proof. intros n E H. destruct H. Qed.
 
-intros.
-change (IN E (Class_succ (Nat n0))) in H0.
-elim (IN_Class_succ_or (Nat n0) E H0).
-intros; exists n0.
-auto with zfc.
+(* Numerals are injective, and no numeral is a set. *)
+Theorem Nat_inj : forall k1 k2 : nat, EQ (Nat k1) (Nat k2) -> k1 = k2.
+Proof. intros k1 k2 H. exact H. Qed.
 
-intros.
-elim (H E); auto with zfc.
-Qed.
+Theorem Nat_not_set : forall n : nat, is_set (Nat n) -> False.
+Proof. intros n H. exact H. Qed.
 
-
-Theorem Omega_EQ_Union : EQ Omega (Union Omega).
-apply INC_EQ; unfold INC in |- *.
-intros.
-elim (IN_Omega_EXType E H); intros n e.
-apply IN_Union with (Nat (S n)).
-auto with zfc.
-
-apply IN_sound_left with (Nat n).
-auto with zfc; try auto with zfc.
-change (IN (Nat n) (Class_succ (Nat n))) in |- *; auto with zfc.
-
-intros.
-elim (Union_IN Omega E H).
-intros e h.
-elim h.
-intros i1 i2.
-elim (IN_Omega_EXType e i1).
-intros n e1.
-cut (IN E (Nat n)).
-intros.
-elim (IN_Nat_EXType n E H0); intros.
-apply IN_sound_left with (Nat x); auto with zfc.
-
-apply IN_sound_right with e; auto with zfc.
-Qed.
-
-(*
-Theorem Omega_Ord : (Ord Omega).
-
-apply Eo with (Union Omega).
-apply Lo.
-intros.
-elim (IN_Omega_EXType e H).
-intros n ee.
-apply Eo with (Nat n); Auto with zfc.
-elim n.
-auto with zfc.
-auto with zfc.
-intros.
-change (Ord (Class_succ (Nat n0))); Auto with zfc.
-apply EQ_sym; Auto with zfc.
-apply Omega_EQ_Union.
-
-Save.
-*)
-
-
-
-Fixpoint Vee (E : Ens) : Ens :=
-  match E with
-  | sup A f => Union (sup A (fun a : A => Power (Vee (f a))))
-  end.
-
-(*
-Definition Alpha : (E:Ens)Ens.
-(Induction E; Intros A f r).
-apply Union.
-apply (sup A).
-intros a.
-exact (Power (r a)).
-
-Save.
-Transparent Alpha.
-*)
+Theorem Omega_is_set : is_set Omega.
+Proof. exact I. Qed.
